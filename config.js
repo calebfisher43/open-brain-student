@@ -1,5 +1,2 @@
-// Your Supabase project details — replace both values below.
-// Find them at: supabase.com → your project → Settings → API
 const SUPABASE_URL = "https://yqjsfeboqsotrgknyzkb.supabase.co"
-const SUPABASE_ANON_KEY = "sb_publishable_sN0BX4x3QzoLDDoJPa1Hmg_gBzu19JD "
-
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxanNmZWJvcXNvdHJna255emtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTI4OTIsImV4cCI6MjA5NzkyODg5Mn0.G9xlPmiHivtf4Pss0Ja0m2YnT2qHh__9izkv0EXC_B8”
