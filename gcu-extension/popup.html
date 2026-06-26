@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { width: 280px; font-family: -apple-system, sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 16px; }
+  h3 { font-size: 14px; margin-bottom: 12px; color: #fff; }
+  button { width: 100%; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .hw { background: #7c3aed; color: #fff; }
+  .hw:hover { background: #6d28d9; }
+  #status { font-size: 12px; color: #666; margin-top: 8px; line-height: 1.5; }
+  #question-preview { font-size: 11px; color: #888; background: #1a1a1a; padding: 8px; border-radius: 6px; margin-top: 8px; max-height: 80px; overflow-y: auto; display: none; }
+</style>
+</head>
+<body>
+<h3>🧠 Open Brain</h3>
+<button class="hw" id="hw-btn">📚 Do My Homework</button>
+<div id="status">Click the button on a GCU discussion page.</div>
+<div id="question-preview"></div>
+
+<script>
+document.getElementById("hw-btn").addEventListener("click", async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!tab.url.includes("gcu.edu")) {
+    document.getElementById("status").textContent = "⚠️ Navigate to your GCU discussion page first.";
+    return;
+  }
+
+  document.getElementById("status").textContent = "Reading discussion question...";
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      const selectors = [".discussionEntry .message", ".discussion-question", "[class*='discussion'] p", ".entry-content", "h3", "h4"];
+      for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText.trim().length > 30) return el.innerText.trim();
+      }
+      const paragraphs = [...document.querySelectorAll("p, div")];
+      return paragraphs.map(el => el.innerText?.trim()).filter(t => t && t.length > 80 && t.length < 2000).sort((a, b) => b.length - a.length)[0] || null;
+    }
+  });
+
+  const question = results[0]?.result;
+
+  if (!question) {
+    document.getElementById("status").textContent = "❌ Could not find a discussion question on this page. Make sure you are on the right page.";
+    return;
+  }
+
+  document.getElementById("question-preview").style.display = "block";
+  document.getElementById("question-preview").textContent = question.slice(0, 200) + "...";
+  document.getElementById("status").textContent = "✅ Found it! Opening dashboard...";
+
+  // Open dashboard with question pre-filled
+  const dashboardUrl = chrome.runtime.getURL("") + "../../dashboard.html";
+  const encoded = encodeURIComponent(question);
+  chrome.tabs.create({ url: `https://yqjsfeboqsotrgknyzkb.supabase.co/functions/v1/open-brain-mcp` });
+
+  // Store question for dashboard to pick up
+  await chrome.storage.local.set({ pendingHomework: question });
+
+  // Open the live dashboard
+  chrome.tabs.create({ url: "https://calebfisher43.github.io/open-brain-student/dashboard.html?hw=" + encoded });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Open Brain - GCU Homework",
+  "version": "1.0",
+  "description": "Reads your GCU discussion questions and sends them to your brain dashboard",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "host_permissions": ["https://*.gcu.edu/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://*.gcu.edu/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  }
+}

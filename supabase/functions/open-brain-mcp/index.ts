@@ -25,6 +25,31 @@ async function listRecent(limit = 10) {
   return await res.json();
 }
 
+async function homeworkAssistant(question: string) {
+  // Search brain for relevant knowledge
+  const searchRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/thoughts?content=ilike.*${encodeURIComponent(question.split(" ").slice(0, 6).join(" "))}*&limit=5&order=created_at.desc`,
+    { headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` } }
+  );
+  const brainResults = await searchRes.json();
+
+  const brainSection = brainResults.length
+    ? "\n\nRELEVANT NOTES FROM YOUR BRAIN:\n" + brainResults.map((t: any) => `- ${t.content.slice(0, 200)}`).join("\n")
+    : "";
+
+  const llmRes = await fetch(`${SUPABASE_URL}/functions/v1/call-llm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify({
+      systemPrompt: "You are an expert academic writing assistant helping a student understand and outline discussion questions. Always remind the student to write in their own words.",
+      prompt: `A student has this discussion question:\n\n${question}${brainSection}\n\nProvide:\n1. WHAT THIS IS ASKING (plain English)\n2. KEY POINTS TO HIT (3-5 bullets)\n3. SUGGESTED OUTLINE (intro, 2-3 body points, conclusion)\n4. TIPS (tone, length, what to avoid)\n\nEnd with: "✏️ Write this in your own words and submit it yourself."`,
+      maxTokens: 1024,
+    }),
+  });
+  const llmData = await llmRes.json();
+  return llmData.text || "Could not generate outline.";
+}
+
 async function addThought(content: string) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/thoughts`, {
     method: "POST",
@@ -60,6 +85,17 @@ const TOOLS = [
       properties: {
         limit: { type: "number", description: "Number of thoughts to return (default 10)" },
       },
+    },
+  },
+  {
+    name: "homework_assistant",
+    description: "Takes a discussion question from school and returns a detailed outline, key points, and writing tips. Searches the user's brain for relevant knowledge. Always reminds the user to write in their own words.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: { type: "string", description: "The full discussion question from school" },
+      },
+      required: ["question"],
     },
   },
   {
@@ -118,6 +154,9 @@ serve(async (req) => {
             text: data.map((t: any) => `[${new Date(t.created_at).toLocaleDateString()}] ${t.content}`).join("\n\n---\n\n"),
           }],
         };
+      } else if (name === "homework_assistant") {
+        const outline = await homeworkAssistant(args.question);
+        result = { content: [{ type: "text", text: outline }] };
       } else if (name === "add_thought") {
         const saved = await addThought(args.content);
         result = {
