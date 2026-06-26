@@ -150,7 +150,6 @@
 </div>
 
 <script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   let supabase, recognition;
 
   async function init() {
@@ -257,6 +256,7 @@
     const reader = new FileReader();
     reader.onload = async e => {
       try {
+        if (typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
         let text = `📄 PDF: ${file.name}\n\n`;
         for (let i = 1; i <= pdf.numPages; i++) {
